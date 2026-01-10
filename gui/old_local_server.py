@@ -96,79 +96,23 @@ class LocalAgent:
     
     def _parse_game_info(self, param_path, folder_name, icon_path):
         """Extract game metadata from PARAM.SFO"""
-        import time
-        start = time.time()
-        
         try:
-            print(f"  [PARSE] Opening {param_path}...")
-            open_start = time.time()
-            with open(param_path, "rb") as f:
-                data = f.read()
-            print(f"  [PARSE] File read took {time.time() - open_start:.2f}s")
-            
-            # Find PSF header
-            print(f"  [PARSE] Finding PSF header...")
-            start_find = data.find(b'PSF\x01')
-            if start_find == -1:
-                return None
+            # Use the working parser!
+            from core.psp_sfo_parser import parse_param_sfo
+            game_name = parse_param_sfo(param_path)
         
-            data = data[start_find:]
-            import struct
-        
-            magic, version, key_table_start, data_table_start, entry_count = struct.unpack("<4s I I I I", data[:20])
-        
-            entries = {}
-            print(f"  [PARSE] Parsing {entry_count} entries...")
-            for i in range(entry_count):
-                entry_base = 20 + i * 16
-                if entry_base + 16 > len(data):
-                    continue
-                
-                kofs, dtype, dlen, dlen_total, dofs = struct.unpack("<HHIII", data[entry_base:entry_base+16])
-            
-                key_start = key_table_start + kofs
-                key_end = data.find(b'\x00', key_start)
-                key = data[key_start:key_end].decode('utf-8', errors='ignore')
-            
-                val_start = data_table_start + dofs
-                val_raw = data[val_start:val_start + dlen]
-            
-                if dtype == 0x0204:
-                    value = val_raw.split(b'\x00')[0].decode('utf-8', errors='ignore')
-                elif dtype == 0x0404 and dlen == 4:
-                    value = struct.unpack("<I", val_raw)[0]
-                else:
-                    value = val_raw.hex()
-            
-                entries[key] = value
-        
-            print(f"  [PARSE] Extracting disc ID...")
             import re
             disc_id_match = re.match(r"(ULUS|ULES|NPJH|NPUH|NPUG|UCUS|UCES|NPPA|NPEZ)[0-9]{5}", folder_name.upper())
             disc_id = disc_id_match.group(0) if disc_id_match else folder_name
-        
-            print(f"  [PARSE] Checking ISO mapping for {disc_id}...")
-            iso_check_start = time.time()
-            has_iso = bool(get_iso_for_disc_id(disc_id))
-            print(f"  [PARSE] ISO check took {time.time() - iso_check_start:.2f}s")
-        
-            print(f"  [PARSE] Checking icon existence...")
-            icon_check_start = time.time()
-            icon_exists = os.path.exists(icon_path)
-            print(f"  [PARSE] Icon check took {time.time() - icon_check_start:.2f}s")
-        
-            elapsed = time.time() - start
-            print(f"  [PARSE] Total _parse_game_info took {elapsed:.2f}s")
-        
+            
             return {
                 'disc_id': disc_id,
-                'title': entries.get('TITLE', 'Unknown Game'),
-                'save_title': entries.get('SAVEDATA_TITLE', ''),
-                'icon_path': icon_path if icon_exists else None,
+                'title': game_name.split('\n')[0] if '\n' in game_name else game_name,
+                'save_title': '',
+                'icon_path': icon_path if os.path.exists(icon_path) else None,
                 'save_path': os.path.dirname(param_path),
-                'has_iso': has_iso
+                'has_iso': bool(get_iso_for_disc_id(disc_id))
             }
-        
         except Exception as e:
             print(f"Error parsing {param_path}: {e}")
             return None

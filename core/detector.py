@@ -1,5 +1,6 @@
 
 import os
+import sys
 
 def detect_format(file_path):
     _, ext = os.path.splitext(file_path.lower())

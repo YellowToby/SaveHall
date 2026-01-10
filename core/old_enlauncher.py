@@ -5,9 +5,6 @@ Replaces core/launcher.py
 
 import subprocess
 import os
-import sys
-
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from core.config import get_ppsspp_path
 
 def launch_ppsspp(iso_path, save_state=None):

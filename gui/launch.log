@@ -19,3 +19,17 @@
 [DEBUG] Executable: C:/Program Files/PPSSPP/PPSSPPWindows.exe
 [DEBUG] ISO: D:/Kurt/Tactics Ogre - Let Us Cling Together (USA).iso
 [DEBUG] Launched successfully.
+
+[DEBUG] === New Launch Request ===
+[DEBUG] Executable: C:/Program Files/PPSSPP/PPSSPPWindows64.exe
+[DEBUG] ISO: D:/Kurt/Tactics Ogre - Let Us Cling Together (USA).iso
+[DEBUG] Save State: None
+[DEBUG] Launching with args: ['C:/Program Files/PPSSPP/PPSSPPWindows64.exe', 'D:/Kurt/Tactics Ogre - Let Us Cling Together (USA).iso']
+[DEBUG] Launched successfully.
+
+[DEBUG] === New Launch Request ===
+[DEBUG] Executable: C:/Program Files/PPSSPP/PPSSPPWindows64.exe
+[DEBUG] ISO: D:/Kurt/Tactics Ogre - Let Us Cling Together (USA).iso
+[DEBUG] Save State: None
+[DEBUG] Launching with args: ['C:/Program Files/PPSSPP/PPSSPPWindows64.exe', 'D:/Kurt/Tactics Ogre - Let Us Cling Together (USA).iso']
+[DEBUG] Launched successfully.

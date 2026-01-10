@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SaveHub - Emulator Save Manager</title>
+    <title>SaveNexus - Emulator Save Manager</title>
     <style>
         * {
             margin: 0;
@@ -253,11 +253,12 @@
 <body>
     <div class="container">
         <header>
-            <h1>SaveHub</h1>
+            <h1>SaveNexus</h1>
             <p>Emulator Save Manager - Web Dashboard</p>
             <div class="status-bar">
                 <span id="localAgentStatus" class="status-badge status-offline">Local Agent: Offline</span>
                 <span id="gamesCount" class="status-badge" style="background: #3b82f6; color: white;">0 Games</span>
+                <span id="pathInfo" class="status-badge" style="background: #8b5cf6; color: white; font-size: 0.8em; cursor: pointer;" onclick="showPathDetails()" title="Click to see detected paths">🔍 Auto-Detected</span>
             </div>
         </header>
 
@@ -269,8 +270,18 @@
 
         <div id="noGames" class="no-games" style="display: none;">
             <h2>No Games Found</h2>
-            <p>Make sure your local agent is running and PSP saves are in the correct directory</p>
-            <p style="margin-top: 10px;"><strong>~/Documents/PPSSPP/PSP/SAVEDATA</strong></p>
+            <p>Make sure your local agent is running and PSP saves are detected</p>
+            <p style="margin-top: 10px; font-size: 0.9em; color: #6b7280;">
+                SaveNexus automatically searches for PPSSPP saves in:
+            </p>
+            <ul style="text-align: left; display: inline-block; margin-top: 10px; color: #4b5563;">
+                <li>Documents/PPSSPP/PSP/SAVEDATA</li>
+                <li>OneDrive/Documents/PPSSPP/PSP/SAVEDATA</li>
+                <li>Other common PPSSPP locations</li>
+            </ul>
+            <p style="margin-top: 15px; font-size: 0.9em;">
+                <strong>Need help?</strong> Check detected paths in desktop app
+            </p>
         </div>
     </div>
 
@@ -286,14 +297,82 @@
         </div>
     </div>
 
+    <!-- Path Info Modal -->
+    <div id="pathModal" class="modal">
+        <div class="modal-content">
+            <h2 class="modal-title">Detected PPSSPP Paths</h2>
+            <div id="pathDetails" style="text-align: left;">
+                <p style="color: #6b7280; margin-bottom: 15px;">SaveNexus automatically detected these locations:</p>
+                <div style="background: #f3f4f6; padding: 15px; border-radius: 8px; margin: 10px 0;">
+                    <strong>Save Files:</strong>
+                    <div id="savedataPath" style="font-family: monospace; font-size: 0.9em; color: #4b5563; margin-top: 5px;">Loading...</div>
+                </div>
+                <div style="background: #f3f4f6; padding: 15px; border-radius: 8px; margin: 10px 0;">
+                    <strong>Save States:</strong>
+                    <div id="savestatePath" style="font-family: monospace; font-size: 0.9em; color: #4b5563; margin-top: 5px;">Loading...</div>
+                </div>
+                <p style="color: #6b7280; font-size: 0.9em; margin-top: 15px;">
+                    💡 These paths were found by scanning common PPSSPP locations including Documents, OneDrive, and custom installations.
+                </p>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn btn-primary" onclick="closePathModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const API_BASE = 'http://127.0.0.1:8765/api';
         let currentGame = null;
         let selectedSave = null;
+        let detectedPaths = null;
+
+        // Fetch detected paths from config
+        async function fetchDetectedPaths() {
+            try {
+                const response = await fetch(`${API_BASE}/config`);
+                const config = await response.json();
+				// ADD THESE DEBUG LINES:
+				console.log('=== CONFIG DEBUG ===');
+				console.log('Full config:', config);
+				console.log('savedata_dir:', config.savedata_dir);
+				console.log('savestate_dir:', config.savestate_dir);
+				console.log('===================');
+                detectedPaths = config;
+                
+                // Update path info badge if paths are detected
+                if (config.savedata_dir || config.savestate_dir) {
+                    document.getElementById('pathInfo').style.background = '#10b981';
+                    document.getElementById('pathInfo').innerHTML = '✅ Paths Found';
+                }
+            } catch (error) {
+                console.error('Error fetching paths:', error);
+            }
+        }
+
+        function showPathDetails() {
+            if (!detectedPaths) {
+                alert('Path information not available. Make sure desktop app is running.');
+                return;
+            }
+            
+            const savedataEl = document.getElementById('savedataPath');
+            const savestateEl = document.getElementById('savestatePath');
+            
+            savedataEl.textContent = detectedPaths.savedata_dir || 'Not detected - using default';
+            savestateEl.textContent = detectedPaths.savestate_dir || 'Not detected - using default';
+            
+            document.getElementById('pathModal').classList.add('active');
+        }
+
+        function closePathModal() {
+            document.getElementById('pathModal').classList.remove('active');
+        }
 
         // Check agent status
         async function checkAgentStatus() {
             try {
+				console.log('=== LOADING GAMES ===');
                 const response = await fetch(`${API_BASE}/status`);
                 const data = await response.json();
                 
@@ -301,6 +380,10 @@
                 if (data.status === 'online') {
                     statusEl.textContent = 'Local Agent: Online';
                     statusEl.className = 'status-badge status-online';
+                    
+                    // Fetch detected paths
+                    await fetchDetectedPaths();
+                    
                     loadGames();
                 } else {
                     statusEl.textContent = 'Local Agent: Offline';
@@ -318,6 +401,14 @@
             try {
                 const response = await fetch(`${API_BASE}/games`);
                 const data = await response.json();
+
+				console.log('Games response:', data);
+				console.log('Total games:', data.total);
+				console.log('Games array:', data.games);
+				console.log('====================');
+				
+				document.getElementById('loadingMessage').style.display = 'none';
+				document.getElementById('gamesCount').textContent = `${data.total} Games`;				
                 
                 document.getElementById('loadingMessage').style.display = 'none';
                 document.getElementById('gamesCount').textContent = `${data.total} Games`;
@@ -466,7 +557,7 @@
             if (document.getElementById('localAgentStatus').textContent.includes('Online')) {
                 loadGames();
             }
-        }, 5002);
+        }, 30000);
 
         // Initial load
         checkAgentStatus();

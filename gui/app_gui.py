@@ -31,13 +31,21 @@ class SaveTranslatorApp(QWidget):
         self.setGeometry(100, 100, 600, 380)
         self.file_path = None
         self.disc_id = None
+        print("[TEST] Calling path detection before server start...")
+        from core.config import get_savedata_dir, get_savestate_dir
+        test_save = get_savedata_dir()
+        test_state = get_savestate_dir()
+        print(f"[TEST] Got SAVEDATA: {test_save}")
+        print(f"[TEST] Got SAVESTATE: {test_state}")
         #Start the local agent server in background
         try:
+            from gui.local_server import start_local_agent_server
             start_local_agent_server(port=8765)
             print("✓ Local Agent API started on http://127.0.0.1:8765")
         except Exception as e:
             print(f"⚠ Warning: Could not start local agent: {e}")
-            
+            import traceback
+            traceback.print_exc()
         self.initUI()
 
     def initUI(self):

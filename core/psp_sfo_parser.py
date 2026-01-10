@@ -65,3 +65,4 @@ def parse_param_sfo(file_path):
         return f"{game_title} ({disc_id})\nVersion: {version}\nSystem Ver: {fw_ver}\nCategory: {cat}\nSave Title: {save_title}\nParental: {parental}"
     except Exception as e:
         return f"Error parsing PARAM.SFO: {e}"
+
