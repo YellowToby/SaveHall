@@ -176,3 +176,84 @@ if __name__ == '__main__':
     dirs = get_all_ppsspp_directories()
     print(f"SAVEDATA options: {dirs['savedata_dirs']}")
     print(f"SAVESTATE options: {dirs['savestate_dirs']}")
+
+"""
+Other Emulators
+"""
+
+# SNES9x Configuration Functions
+
+def get_snes9x_path():
+    """Get SNES9x executable path"""
+    config = load_config()
+    return config.get("snes9x_path", "")
+
+def set_snes9x_path(path):
+    """Set SNES9x executable path"""
+    config = load_config()
+    config["snes9x_path"] = path
+    save_config(config)
+
+def get_snes9x_save_dir():
+    """Get SNES9x save directory"""
+    config = load_config()
+    
+    if "snes9x_save_dir" in config and config["snes9x_save_dir"]:
+        return config["snes9x_save_dir"]
+    
+    # Default locations
+    defaults = [
+        os.path.expanduser("~/Documents/Snes9x/Saves"),
+        os.path.expanduser("~/OneDrive/Documents/Snes9x/Saves"),
+        os.path.expanduser("~/AppData/Roaming/Snes9x"),
+    ]
+    
+    for default in defaults:
+        if os.path.exists(default):
+            config["snes9x_save_dir"] = default
+            save_config(config)
+            return default
+    
+    return defaults[0]
+
+def set_snes9x_save_dir(path):
+    """Set SNES9x save directory"""
+    config = load_config()
+    config["snes9x_save_dir"] = path
+    save_config(config)
+
+
+# Dolphin (GameCube/Wii) - Placeholder
+
+def get_dolphin_path():
+    config = load_config()
+    return config.get("dolphin_path", "")
+
+def set_dolphin_path(path):
+    config = load_config()
+    config["dolphin_path"] = path
+    save_config(config)
+
+
+# Citra (3DS) - Placeholder
+
+def get_citra_path():
+    config = load_config()
+    return config.get("citra_path", "")
+
+def set_citra_path(path):
+    config = load_config()
+    config["citra_path"] = path
+    save_config(config)
+
+
+# RetroArch - Placeholder
+
+def get_retroarch_path():
+    config = load_config()
+    return config.get("retroarch_path", "")
+
+def set_retroarch_path(path):
+    config = load_config()
+    config["retroarch_path"] = path
+    save_config(config)

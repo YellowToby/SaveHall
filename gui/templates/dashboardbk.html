@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SaveNexus - Emulator Save Manager</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            color: #667eea;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .status-bar {
+            display: flex;
+            gap: 20px;
+            margin-top: 15px;
+        }
+
+        .status-badge {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: 600;
+        }
+
+        .status-online {
+            background: #10b981;
+            color: white;
+        }
+
+        .status-offline {
+            background: #ef4444;
+            color: white;
+        }
+
+        .game-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 25px;
+            margin-top: 20px;
+        }
+
+        .game-card {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+            cursor: pointer;
+        }
+
+        .game-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .game-icon {
+            width: 100%;
+            height: 180px;
+            object-fit: cover;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 3em;
+        }
+
+        .game-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .game-info {
+            padding: 20px;
+        }
+
+        .game-title {
+            font-size: 1.1em;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+
+        .game-disc-id {
+            color: #6b7280;
+            font-size: 0.85em;
+            margin-bottom: 12px;
+        }
+
+        .save-states-list {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .save-state-item {
+            padding: 6px 0;
+            font-size: 0.85em;
+            color: #4b5563;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .launch-button {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.3s;
+        }
+
+        .launch-button:hover {
+            opacity: 0.9;
+        }
+
+        .launch-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .no-games {
+            text-align: center;
+            padding: 60px 20px;
+            background: white;
+            border-radius: 15px;
+            color: #6b7280;
+        }
+
+        .no-games h2 {
+            color: #1f2937;
+            margin-bottom: 10px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: white;
+            font-size: 1.2em;
+        }
+
+        /* Launch Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.7);
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-title {
+            font-size: 1.5em;
+            margin-bottom: 20px;
+            color: #1f2937;
+        }
+
+        .save-option {
+            padding: 15px;
+            margin: 10px 0;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .save-option:hover {
+            border-color: #667eea;
+            background: #f9fafb;
+        }
+
+        .save-option.selected {
+            border-color: #667eea;
+            background: #eef2ff;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            flex: 1;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #e5e7eb;
+            color: #4b5563;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <h1>SaveNexus</h1>
+            <p>Emulator Save Manager - Web Dashboard</p>
+			<button onclick="forceRefresh()" class="btn btn-primary">
+			🔄 Refresh Library
+			</button>
+            <div class="status-bar">
+                <span id="localAgentStatus" class="status-badge status-offline">Local Agent: Offline</span>
+                <span id="gamesCount" class="status-badge" style="background: #3b82f6; color: white;">0 Games</span>
+            </div>
+        </header>
+
+        <div id="loadingMessage" class="loading">
+            Connecting to local agent...
+        </div>
+
+        <div id="gameLibrary" class="game-grid" style="display: none;"></div>
+
+        <div id="noGames" class="no-games" style="display: none;">
+            <h2>No Games Found</h2>
+            <p>Make sure your local agent is running and PSP saves are detected</p>
+        </div>
+    </div>
+
+    <!-- Launch Modal -->
+    <div id="launchModal" class="modal">
+        <div class="modal-content">
+            <h2 class="modal-title" id="modalGameTitle">Select Save</h2>
+            <div id="saveOptions"></div>
+            <div class="modal-buttons">
+                <button class="btn btn-secondary" onclick="closeLaunchModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="confirmLaunch()">Launch</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://127.0.0.1:8765/api';
+        let currentGame = null;
+        let selectedSave = null;
+		
+		// Refresh Library
+		async function forceRefresh() {
+			document.getElementById('loadingMessage').style.display = 'block';
+			await fetch(`${API_BASE}/refresh`, { method: 'POST' });
+			loadGames();
+		}
+
+        // Check agent status
+        async function checkAgentStatus() {
+            try {
+                const response = await fetch(`${API_BASE}/status`);
+                const data = await response.json();
+                
+                console.log('[STATUS]', data);
+                
+                const statusEl = document.getElementById('localAgentStatus');
+                if (data.status === 'online') {
+                    statusEl.textContent = 'Local Agent: Online';
+                    statusEl.className = 'status-badge status-online';
+                    loadGames();
+                } else {
+                    statusEl.textContent = 'Local Agent: Offline';
+                    statusEl.className = 'status-badge status-offline';
+                }
+            } catch (error) {
+                console.error('[ERROR] Status check failed:', error);
+                document.getElementById('localAgentStatus').className = 'status-badge status-offline';
+                document.getElementById('loadingMessage').textContent = 
+                    'Cannot connect to local agent. Make sure desktop app is running.';
+            }
+        }
+
+        // Load games from local agent
+        async function loadGames() {
+            try {
+                const response = await fetch(`${API_BASE}/games`);
+                const data = await response.json();
+                
+                console.log('[GAMES]', data);
+                
+                document.getElementById('loadingMessage').style.display = 'none';
+                document.getElementById('gamesCount').textContent = `${data.total} Games`;
+                
+                if (data.games.length === 0) {
+                    document.getElementById('noGames').style.display = 'block';
+                    return;
+                }
+                
+                displayGames(data.games);
+            } catch (error) {
+                console.error('[ERROR] Loading games failed:', error);
+                document.getElementById('loadingMessage').textContent = 'Error loading games';
+            }
+        }
+
+        // Display games in grid
+        function displayGames(games) {
+            const grid = document.getElementById('gameLibrary');
+            grid.style.display = 'grid';
+            grid.innerHTML = '';
+            
+            games.forEach(game => {
+                const card = document.createElement('div');
+                card.className = 'game-card';
+                
+                // FIXED: Handle both disc_id (PSP) and id (SNES)
+                const gameId = game.disc_id || game.id;
+                
+                card.onclick = () => openLaunchModal(game);
+                
+                const iconHtml = game.icon_path 
+                    ? `<img src="${API_BASE}/icon/${gameId}" alt="${game.title}">`
+                    : '<div class="game-icon">🎮</div>';
+                
+                const saveStatesHtml = game.save_states && game.save_states.length > 0
+                    ? `<div class="save-states-list">
+                        ${game.save_states.slice(0, 3).map(state => 
+                            `<div class="save-state-item">⚡ ${state.filename}</div>`
+                        ).join('')}
+                       </div>`
+                    : '';
+                
+                const isoStatus = game.has_iso 
+                    ? '<span style="color: #10b981;">✓ ISO Mapped</span>'
+                    : game.has_rom
+                    ? '<span style="color: #10b981;">✓ ROM Mapped</span>'
+                    : '<span style="color: #ef4444;">✗ No ISO/ROM</span>';
+                
+                card.innerHTML = `
+                    <div class="game-icon">${iconHtml}</div>
+                    <div class="game-info">
+                        <div class="game-title">${game.title}</div>
+                        <div class="game-disc-id">${gameId} • ${isoStatus}</div>
+                        ${saveStatesHtml}
+                        <button class="launch-button" ${!game.has_iso && !game.has_rom ? 'disabled' : ''}>
+                            ${game.has_iso || game.has_rom ? '🎮 Launch' : '⚠️ No ISO/ROM'}
+                        </button>
+                    </div>
+                `;
+                
+                grid.appendChild(card);
+            });
+        }
+
+        // Open launch modal with save options
+        function openLaunchModal(game) {
+            console.log('[MODAL] Opening for game:', game);
+            
+            if (!game.has_iso && !game.has_rom) {
+                alert('No ISO/ROM mapped for this game');
+                return;
+            }
+            
+            currentGame = game;
+            document.getElementById('modalGameTitle').textContent = game.title;
+            
+            const optionsDiv = document.getElementById('saveOptions');
+            optionsDiv.innerHTML = '';
+            
+            // Add main save option
+            const mainSave = document.createElement('div');
+            mainSave.className = 'save-option selected';
+            mainSave.onclick = () => selectSave(null, mainSave);
+            mainSave.innerHTML = `
+                <strong>💾 Main Save File</strong>
+                <div style="font-size: 0.9em; color: #6b7280; margin-top: 5px;">
+                    Resume from in-game save point
+                </div>
+            `;
+            optionsDiv.appendChild(mainSave);
+            selectedSave = null;
+            
+            // Add save state options
+            if (game.save_states && game.save_states.length > 0) {
+                game.save_states.forEach(state => {
+                    const stateOption = document.createElement('div');
+                    stateOption.className = 'save-option';
+                    stateOption.onclick = () => selectSave(state, stateOption);
+                    
+                    const date = new Date(state.modified * 1000);
+                    stateOption.innerHTML = `
+                        <strong>⚡ ${state.filename}</strong>
+                        <div style="font-size: 0.9em; color: #6b7280; margin-top: 5px;">
+                            ${date.toLocaleString()}
+                        </div>
+                    `;
+                    optionsDiv.appendChild(stateOption);
+                });
+            }
+            
+            document.getElementById('launchModal').classList.add('active');
+        }
+
+        function selectSave(saveState, element) {
+            document.querySelectorAll('.save-option').forEach(el => {
+                el.classList.remove('selected');
+            });
+            element.classList.add('selected');
+            selectedSave = saveState;
+            console.log('[SELECT] Save state:', saveState);
+        }
+
+        function closeLaunchModal() {
+            document.getElementById('launchModal').classList.remove('active');
+            currentGame = null;
+            selectedSave = null;
+        }
+
+        async function confirmLaunch() {
+            if (!currentGame) {
+                console.error('[ERROR] No game selected');
+                return;
+            }
+            
+            // FIXED: Use flexible ID field
+            const gameId = currentGame.disc_id || currentGame.id;
+            
+            console.log('[LAUNCH] Starting launch for:', gameId);
+            console.log('[LAUNCH] Selected save state:', selectedSave);
+            
+            try {
+                const response = await fetch(`${API_BASE}/launch`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        disc_id: gameId,  // Server expects this field name
+                        save_state: selectedSave ? selectedSave.path : null
+                    })
+                });
+                
+                const result = await response.json();
+                console.log('[LAUNCH] Server response:', result);
+                
+                if (result.success) {
+                    alert(`Launching ${currentGame.title}!`);
+                    closeLaunchModal();
+                } else {
+                    alert(`Error: ${result.error}`);
+                    console.error('[LAUNCH ERROR]', result.error);
+                }
+            } catch (error) {
+                console.error('[LAUNCH ERROR]', error);
+                alert(`Launch failed: ${error.message}`);
+            }
+        }
+
+        // Auto-refresh every 30 seconds
+        setInterval(() => {
+            if (document.getElementById('localAgentStatus').textContent.includes('Online')) {
+                loadGames();
+            }
+        }, 30000);
+
+        // Initial load
+        console.log('[INIT] Starting SaveNexus Dashboard');
+        checkAgentStatus();
+    </script>
+</body>
+</html>

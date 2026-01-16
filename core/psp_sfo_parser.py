@@ -1,68 +1,68 @@
-
+import re
+from pathlib import Path
 import struct
 
-def parse_param_sfo(file_path):
-    try:
-        with open(file_path, "rb") as f:
-            data = f.read()
+# Expand this over time — add entries when you recognize/play a game
+GAME_ID_TO_NAME = {
+    # Example: "ULUS10536": "God of War - Chains of Olympus"
+    # Keep adding...
+}
 
-        print(f"Reading PARAM.SFO: {file_path}")
-        print("Header Bytes:", data[:16].hex())
-
-        # Align to actual header
-        start = data.find(b'PSF\x01')
-        if start == -1:
-            return "Invalid SFO format"
-        data = data[start:]
-
-        if len(data) < 20:
-            return "PARAM.SFO too small"
-
-        # Corrected variable unpacking
-        #magic, version, key_table_start, data_table_start, entry_count = struct.unpack("<4sHHIII", data[:20])
-        magic, version, key_table_start, data_table_start, entry_count = struct.unpack("<4sHHII", data[:16])
-
+def parse_param_sfo(folder_name: str) -> str:
+    # Find the main TITLE_ID pattern (e.g. ULUS12345, NPJH99999, etc.)
+    match = re.search(r"([A-Z]{4}\d{5})(.*)", folder_name.upper())
+    if match:
+        game_id = match.group(1)
+        suffix = match.group(2).strip()  # e.g. "GameData00", "SaveData00", "SYSDATA"
         
-        if magic != b'PSF\x01':
-            return "Invalid SFO signature"
-
-        entries = {}
-        for i in range(entry_count):
-            entry_base = 20 + i * 16
-            if entry_base + 16 > len(data):
-                continue
-            kofs, dtype, dlen, dlen_total, dofs = struct.unpack("<HHIII", data[entry_base:entry_base+16])
-
-            key_start = key_table_start + kofs
-            key_end = data.find(b'\x00', key_start)
-            key = data[key_start:key_end].decode('utf-8')
-
-            val_start = data_table_start + dofs
-            val_raw = data[val_start:val_start + dlen]
-
-            if dtype == 0x0204:  # UTF-8 string
-                value = val_raw.split(b'\x00')[0].decode('utf-8')
-            elif dtype == 0x0404 and dlen == 4:
-                value = struct.unpack("<I", val_raw)[0]
+        base_name = GAME_ID_TO_NAME.get(game_id, f"{game_id} (unknown)")
+        
+        if suffix:
+            if "SYSDATA" in suffix.upper():
+                return f"{base_name} [System/Data]"
+            elif "OPTION" in suffix.upper():
+                return f"{base_name} [Options/Config]"
+            elif any(x in suffix.upper() for x in ["DATA", "SAVE", "PROGRESS"]):
+                return f"{base_name} Save {suffix}"
             else:
-                value = val_raw.hex()
+                return f"{base_name} ({suffix})"
+        return base_name
+    
+    # Ultimate fallback
+    return folder_name.replace("SYSDATA", "[System]").replace("Progress", "[Progress]")
 
-            entries[key] = value
 
-        game_title = (
-            entries.get("TITLE")
-            or entries.get("SAVEDATA_TITLE")
-            or entries.get("TITLE_ID")
-            or "Unknown Game"
-        )
-        disc_id = entries.get("DISC_ID", "")
-        version = entries.get("VERSION", "")
-        fw_ver = entries.get("SYSTEM_VER", "")
-        save_title = entries.get("SAVEDATA_TITLE", "")
-        cat = entries.get("CATEGORY", "")
-        parental = entries.get("PARENTAL_LEVEL", "")
+def scan_folder(base_path):
+    base = Path(base_path)
+    print(f"\nScanning PPSSPP SAVEDATA: {base.absolute()}")
+    print("-" * 80)
 
-        return f"{game_title} ({disc_id})\nVersion: {version}\nSystem Ver: {fw_ver}\nCategory: {cat}\nSave Title: {save_title}\nParental: {parental}"
-    except Exception as e:
-        return f"Error parsing PARAM.SFO: {e}"
+    count = 0
+    for folder in sorted(base.iterdir()):
+        if not folder.is_dir():
+            continue
+            
+        name = parse_param_sfo(folder.name)
+        has_sfo = (folder / "PARAM.SFO").is_file()
+        has_icon = (folder / "ICON0.PNG").is_file()
+        
+        extra = []
+        if has_sfo:
+            extra.append("SFO")
+        if has_icon:
+            extra.append("ICON")
+        
+        line = f"{folder.name:22} → {name}"
+        if extra:
+            line += f"  [{', '.join(extra)}]"
+        
+        print(line)
+        count += 1
 
+    print("-" * 80)
+    print(f"Total folders: {count}")
+
+
+# Your path
+SAVES_DIRECTORY = r"C:\Users\mepla\OneDrive\Documents\PPSSPP\PSP\SAVEDATA"
+scan_folder(SAVES_DIRECTORY)

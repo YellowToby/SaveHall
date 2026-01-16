@@ -9,19 +9,11 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from core.launcher import launch_ppsspp
 from core.game_map import get_iso_for_disc_id, load_game_map
 from core.psp_sfo_parser import parse_param_sfo
-from core.config import get_ppsspp_path, get_savedata_dir, get_savestate_dir
+from core.snes9x_parser import find_snes9x_saves, get_snes9x_save_states
+from core.config import get_ppsspp_path, get_savedata_dir, get_savestate_dir, get_snes9x_path, set_snes9x_path, get_snes9x_save_dir, set_snes9x_save_dir
 
 app = Flask(__name__)
 CORS(app)  # Allow cross-origin requests from web dashboard
-
-# Default PSP save directory (configurable)
-PSP_SAVEDATA_DIR = os.path.expanduser("~/Documents/PPSSPP/PSP/SAVEDATA")
-PSP_SAVESTATE_DIR = os.path.expanduser("~/Documents/PPSSPP/PSP/PPSSPP_STATE")
-#PSP_SAVEDATA_DIR = get_savedata_dir()
-#PSP_SAVESTATE_DIR = get_savestate_dir()
-
-#PSP_SAVEDATA_DIR = os.path.expanduser(get_savedata_dir())
-#PSP_SAVESTATE_DIR = os.path.expanduser(get_savestate_dir())
 
 class LocalAgent:
     """Manages communication between web dashboard and local emulator"""
@@ -29,25 +21,52 @@ class LocalAgent:
     def __init__(self):
         try:
             # Store paths as instance variables
+            
+            # PSP paths
             self.savedata_dir = get_savedata_dir()
             self.savestate_dir = get_savestate_dir()
-            
             print(f"[LOCAL SERVER] SAVEDATA: {self.savedata_dir}")
             print(f"[LOCAL SERVER] SAVESTATE: {self.savestate_dir}")
             
+            # SNES9x paths             
+            self.snes9x_save_dir = get_snes9x_save_dir()       
+            print(f"[LOCAL SERVER] SNES9X SAVES: {self.snes9x_save_dir}")
+
+            # Initialize caches for each emulator
+            self.psp_games = [] #Will replace games_cache
             self.games_cache = []
             self.scan_saves()
+            self.snes_games = []
+            self.dolphin_games = []  # Placeholder
+            self.citra_games = []    # Placeholder
+
+            # Scan all emulators
+            #self.scan_all_emulators()
+
             
             print("[SUCCESS] LocalAgent initialized successfully")
         except Exception as e:
             print(f"[FATAL ERROR] LocalAgent initialization failed: {e}")
             import traceback
             traceback.print_exc()
-            # Set defaults so server can still start
+            # Set defaults
+            self.psp_games = []
+            self.snes_games = []
+            self.dolphin_games = []
+            self.citra_games = []
+            # Set defaults so server can still start (Can be deleted)
             self.savedata_dir = os.path.expanduser("~/Documents/PPSSPP/PSP/SAVEDATA")
             self.savestate_dir = os.path.expanduser("~/Documents/PPSSPP/PSP/PPSSPP_STATE")
             self.games_cache = []
-    
+
+    def scan_all_emulators(self):
+        """Scan all configured emulators"""
+        print("[SCAN] Scanning all emulators...")
+        self.psp_games = self.scan_psp_saves()
+        self.snes_games = self.scan_snes_saves()
+        # Add more as implemented
+        print(f"[SCAN] Total: {len(self.psp_games)} PSP, {len(self.snes_games)} SNES")
+
     def scan_saves(self):
         """Scan PSP save directories and build game library"""
         games = []

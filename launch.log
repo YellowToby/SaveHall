@@ -1,12 +1,10 @@
-[DEBUG] Executable: C:/Program Files/PPSSPP/PPSSPPWindows.exe
-[DEBUG] ISO: D:/Kurt/Tactics Ogre - Let Us Cling Together (USA).iso
-[DEBUG] Launched successfully.
 
 [DEBUG] === New Launch Request ===
 [DEBUG] Executable: C:/Program Files/PPSSPP/PPSSPPWindows64.exe
 [DEBUG] ISO: D:/Kurt/Tactics Ogre - Let Us Cling Together (USA).iso
-[DEBUG] Save State: None
-[DEBUG] Launching with args: ['C:/Program Files/PPSSPP/PPSSPPWindows64.exe', 'D:/Kurt/Tactics Ogre - Let Us Cling Together (USA).iso']
+[DEBUG] Save State: C:\Users\mepla/OneDrive/Documents\PPSSPP/PSP/PPSSPP_STATE\ULUS10565_1.00_0.ppst
+[DEBUG] Loading save state: C:\Users\mepla/OneDrive/Documents\PPSSPP/PSP/PPSSPP_STATE\ULUS10565_1.00_0.ppst
+[DEBUG] Launching with args: ['C:/Program Files/PPSSPP/PPSSPPWindows64.exe', 'D:/Kurt/Tactics Ogre - Let Us Cling Together (USA).iso', '--state=C:\\Users\\mepla/OneDrive/Documents\\PPSSPP/PSP/PPSSPP_STATE\\ULUS10565_1.00_0.ppst']
 [DEBUG] Launched successfully.
 
 [DEBUG] === New Launch Request ===
@@ -20,17 +18,156 @@
 [DEBUG] === New Launch Request ===
 [DEBUG] Executable: C:/Program Files/PPSSPP/PPSSPPWindows64.exe
 [DEBUG] ISO: D:/Kurt/Tactics Ogre - Let Us Cling Together (USA).iso
-[DEBUG] Save State: C:\Users\mepla/OneDrive/Documents\PPSSPP/PSP/PPSSPP_STATE\ULUS10565_1.00_0.undo.ppst
-[DEBUG] Loading save state: C:\Users\mepla/OneDrive/Documents\PPSSPP/PSP/PPSSPP_STATE\ULUS10565_1.00_0.undo.ppst
-[DEBUG] Launching with args: ['C:/Program Files/PPSSPP/PPSSPPWindows64.exe', 'D:/Kurt/Tactics Ogre - Let Us Cling Together (USA).iso', '--state=C:\\Users\\mepla/OneDrive/Documents\\PPSSPP/PSP/PPSSPP_STATE\\ULUS10565_1.00_0.undo.ppst']
+[DEBUG] Save State: C:\Users\mepla/OneDrive/Documents\PPSSPP/PSP/PPSSPP_STATE\ULUS10565_1.00_0.ppst
+[DEBUG] Loading save state: C:\Users\mepla/OneDrive/Documents\PPSSPP/PSP/PPSSPP_STATE\ULUS10565_1.00_0.ppst
+[DEBUG] Launching with args: ['C:/Program Files/PPSSPP/PPSSPPWindows64.exe', 'D:/Kurt/Tactics Ogre - Let Us Cling Together (USA).iso', '--state=C:\\Users\\mepla/OneDrive/Documents\\PPSSPP/PSP/PPSSPP_STATE\\ULUS10565_1.00_0.ppst']
 [DEBUG] Launched successfully.
+
+[DEBUG] === New Launch Request ===
+[DEBUG] Executable: C:/Program Files/PPSSPP/PPSSPPWindows64.exe
+[DEBUG] ISO: D:/Kurt/Tactics Ogre - Let Us Cling Together (USA).iso
+[DEBUG] Save State: C:\Users\mepla/OneDrive/Documents\PPSSPP/PSP/PPSSPP_STATE\ULUS10565_1.00_0.ppst
+[DEBUG] Loading save state: C:\Users\mepla/OneDrive/Documents\PPSSPP/PSP/PPSSPP_STATE\ULUS10565_1.00_0.ppst
+[DEBUG] Launching with args: ['C:/Program Files/PPSSPP/PPSSPPWindows64.exe', 'D:/Kurt/Tactics Ogre - Let Us Cling Together (USA).iso', '--state=C:\\Users\\mepla/OneDrive/Documents\\PPSSPP/PSP/PPSSPP_STATE\\ULUS10565_1.00_0.ppst']
+[DEBUG] Launched successfully.
+
+[DEBUG] === New Launch Request ===
+[DEBUG] Executable: C:/Program Files/PPSSPP/PPSSPPWindows64.exe
+[DEBUG] ISO: D:/Kurt/Tactics Ogre - Let Us Cling Together (USA).iso
+[DEBUG] Save State: C:\Users\mepla/OneDrive/Documents\PPSSPP/PSP/PPSSPP_STATE\ULUS10565_1.00_0.ppst
+[DEBUG] Loading save state: C:\Users\mepla/OneDrive/Documents\PPSSPP/PSP/PPSSPP_STATE\ULUS10565_1.00_0.ppst
+[DEBUG] Launching with args: ['C:/Program Files/PPSSPP/PPSSPPWindows64.exe', 'D:/Kurt/Tactics Ogre - Let Us Cling Together (USA).iso', '--state=C:\\Users\\mepla/OneDrive/Documents\\PPSSPP/PSP/PPSSPP_STATE\\ULUS10565_1.00_0.ppst']
+[DEBUG] Launched successfully.
+
+[DEBUG] === New Launch Request ===
+[DEBUG] Executable: C:/Program Files/PPSSPP/PPSSPPWindows64.exe
+[DEBUG] ISO: D:/Kurt/Tactics Ogre - Let Us Cling Together (USA).iso
+[DEBUG] Save State: C:\Users\mepla/OneDrive/Documents\PPSSPP/PSP/PPSSPP_STATE\ULUS10565_1.00_0.ppst
+[DEBUG] Loading save state: C:\Users\mepla/OneDrive/Documents\PPSSPP/PSP/PPSSPP_STATE\ULUS10565_1.00_0.ppst
+
+[DEBUG] === New Launch Request ===
+[DEBUG] Executable: C:/Program Files/PPSSPP/PPSSPPWindows64.exe
+[DEBUG] ISO: D:/Kurt/Tactics Ogre - Let Us Cling Together (USA).iso
+[DEBUG] Save State: C:\Users\mepla/OneDrive/Documents\PPSSPP/PSP/PPSSPP_STATE\ULUS10565_1.00_0.ppst
+[DEBUG] Loading save state: C:\Users\mepla/OneDrive/Documents\PPSSPP/PSP/PPSSPP_STATE\ULUS10565_1.00_0.ppst
+
+[DEBUG] === New Launch Request ===
+[DEBUG] Executable: C:/Program Files/PPSSPP/PPSSPPWindows64.exe
+[DEBUG] ISO: D:/Kurt/Tactics Ogre - Let Us Cling Together (USA).iso
+[DEBUG] Save State: C:\Users\mepla/OneDrive/Documents\PPSSPP/PSP/PPSSPP_STATE\ULUS10565_1.00_0.ppst
+[DEBUG] Loading save state: C:\Users\mepla/OneDrive/Documents\PPSSPP/PSP/PPSSPP_STATE\ULUS10565_1.00_0.ppst
+
+[DEBUG] === New Launch Request ===
+[DEBUG] Executable: C:/Program Files/PPSSPP/PPSSPPWindows64.exe
+[DEBUG] ISO: D:/Kurt/Tactics Ogre - Let Us Cling Together (USA).iso
+[DEBUG] Save State: C:\Users\mepla/OneDrive/Documents\PPSSPP/PSP/PPSSPP_STATE\ULUS10565_1.00_0.ppst
+[DEBUG] Loading save state: C:\Users\mepla/OneDrive/Documents\PPSSPP/PSP/PPSSPP_STATE\ULUS10565_1.00_0.ppst
+
+[DEBUG] === New Launch Request ===
+[DEBUG] Executable: C:/Program Files/PPSSPP/PPSSPPWindows64.exe
+[DEBUG] ISO: D:/Kurt/Tactics Ogre - Let Us Cling Together (USA).iso
+[DEBUG] Save State: C:\Users\mepla/OneDrive/Documents\PPSSPP/PSP/PPSSPP_STATE\ULUS10565_1.00_0.ppst
+[DEBUG] Loading save state: C:\Users\mepla/OneDrive/Documents\PPSSPP/PSP/PPSSPP_STATE\ULUS10565_1.00_0.ppst
+
+[DEBUG] === New Launch Request ===
+[DEBUG] Executable: C:/Program Files/PPSSPP/PPSSPPWindows64.exe
+[DEBUG] ISO: D:/Kurt/Tactics Ogre - Let Us Cling Together (USA).iso
+[DEBUG] Save State: C:\Users\mepla/OneDrive/Documents\PPSSPP/PSP/PPSSPP_STATE\ULUS10565_1.00_0.ppst
+[DEBUG] Loading save state: C:\Users\mepla/OneDrive/Documents\PPSSPP/PSP/PPSSPP_STATE\ULUS10565_1.00_0.ppst
+
+[DEBUG] === New Launch Request ===
+[DEBUG] Executable: C:/Program Files/PPSSPP/PPSSPPWindows64.exe
+[DEBUG] ISO: D:/Kurt/Tactics Ogre - Let Us Cling Together (USA).iso
+[DEBUG] Save State: C:\Users\mepla/OneDrive/Documents\PPSSPP/PSP/PPSSPP_STATE\ULUS10565_1.00_0.ppst
+[DEBUG] Loading save state: C:\Users\mepla/OneDrive/Documents\PPSSPP/PSP/PPSSPP_STATE\ULUS10565_1.00_0.ppst
+[DEBUG] Launching with args: ['C:/Program Files/PPSSPP/PPSSPPWindows64.exe', 'D:/Kurt/Tactics Ogre - Let Us Cling Together (USA).iso', '--state=C:\\Users\\mepla/OneDrive/Documents\\PPSSPP/PSP/PPSSPP_STATE\\ULUS10565_1.00_0.ppst']
+[DEBUG] Launched successfully.
+
+[DEBUG] === New Launch Request ===
+[DEBUG] Executable: C:/Program Files/PPSSPP/PPSSPPWindows64.exe
+[DEBUG] ISO: D:/Kurt/Tactics Ogre - Let Us Cling Together (USA).iso
+[DEBUG] Save State: C:\Users\mepla/OneDrive/Documents\PPSSPP/PSP/PPSSPP_STATE\ULUS10565_1.00_0.ppst
+[DEBUG] Loading save state: C:\Users\mepla/OneDrive/Documents\PPSSPP/PSP/PPSSPP_STATE\ULUS10565_1.00_0.ppst
+[ERROR] Failed to launch PPSSPP: name 'time' is not defined
+[CONTEXT] ISO: D:/Kurt/Tactics Ogre - Let Us Cling Together (USA).iso
+[CONTEXT] State: C:\Users\mepla/OneDrive/Documents\PPSSPP/PSP/PPSSPP_STATE\ULUS10565_1.00_0.ppst
+
+[DEBUG] === New Launch Request ===
+[DEBUG] Executable: C:/Program Files/PPSSPP/PPSSPPWindows64.exe
+[DEBUG] ISO: D:/Kurt/Tactics Ogre - Let Us Cling Together (USA).iso
+[DEBUG] Save State: C:\Users\mepla/OneDrive/Documents\PPSSPP/PSP/PPSSPP_STATE\ULUS10565_1.00_0.ppst
+[DEBUG] Loading save state: C:\Users\mepla/OneDrive/Documents\PPSSPP/PSP/PPSSPP_STATE\ULUS10565_1.00_0.ppst
+[ERROR] Failed to launch PPSSPP: name 'time' is not defined
+[CONTEXT] ISO: D:/Kurt/Tactics Ogre - Let Us Cling Together (USA).iso
+[CONTEXT] State: C:\Users\mepla/OneDrive/Documents\PPSSPP/PSP/PPSSPP_STATE\ULUS10565_1.00_0.ppst
 
 [DEBUG] === New Launch Request ===
 [DEBUG] Executable: C:/Program Files/PPSSPP/PPSSPPWindows64.exe
 [DEBUG] ISO: D:/Kurt/Tactics Ogre - Let Us Cling Together (USA).iso
 [DEBUG] Save State: C:\Users\mepla/OneDrive/Documents\PPSSPP/PSP/PPSSPP_STATE\ULUS10565_1.00_1.ppst
 [DEBUG] Loading save state: C:\Users\mepla/OneDrive/Documents\PPSSPP/PSP/PPSSPP_STATE\ULUS10565_1.00_1.ppst
-[DEBUG] Launching with args: ['C:/Program Files/PPSSPP/PPSSPPWindows64.exe', 'D:/Kurt/Tactics Ogre - Let Us Cling Together (USA).iso', '--state=C:\\Users\\mepla/OneDrive/Documents\\PPSSPP/PSP/PPSSPP_STATE\\ULUS10565_1.00_1.ppst']
+[ERROR] Failed to launch PPSSPP: name 'time' is not defined
+[CONTEXT] ISO: D:/Kurt/Tactics Ogre - Let Us Cling Together (USA).iso
+[CONTEXT] State: C:\Users\mepla/OneDrive/Documents\PPSSPP/PSP/PPSSPP_STATE\ULUS10565_1.00_1.ppst
+
+[DEBUG] === New Launch Request ===
+[DEBUG] Executable: C:/Program Files/PPSSPP/PPSSPPWindows64.exe
+[DEBUG] ISO: D:/Kurt/Tactics Ogre - Let Us Cling Together (USA).iso
+[DEBUG] Save State: C:\Users\mepla/OneDrive/Documents\PPSSPP/PSP/PPSSPP_STATE\ULUS10565_1.00_0.ppst
+[DEBUG] Loading save state: C:\Users\mepla/OneDrive/Documents\PPSSPP/PSP/PPSSPP_STATE\ULUS10565_1.00_0.ppst
+[ERROR] Failed to launch PPSSPP: name 'time' is not defined
+[CONTEXT] ISO: D:/Kurt/Tactics Ogre - Let Us Cling Together (USA).iso
+[CONTEXT] State: C:\Users\mepla/OneDrive/Documents\PPSSPP/PSP/PPSSPP_STATE\ULUS10565_1.00_0.ppst
+
+[DEBUG] === New Launch Request ===
+[DEBUG] Executable: C:/Program Files/PPSSPP/PPSSPPWindows64.exe
+[DEBUG] ISO: D:/Kurt/Tactics Ogre - Let Us Cling Together (USA).iso
+[DEBUG] Save State: C:\Users\mepla/OneDrive/Documents\PPSSPP/PSP/PPSSPP_STATE\ULUS10565_1.00_0.ppst
+[DEBUG] Loading save state: C:\Users\mepla/OneDrive/Documents\PPSSPP/PSP/PPSSPP_STATE\ULUS10565_1.00_0.ppst
+[ERROR] Failed to launch PPSSPP: name 'time' is not defined
+[CONTEXT] ISO: D:/Kurt/Tactics Ogre - Let Us Cling Together (USA).iso
+[CONTEXT] State: C:\Users\mepla/OneDrive/Documents\PPSSPP/PSP/PPSSPP_STATE\ULUS10565_1.00_0.ppst
+
+[DEBUG] === New Launch Request ===
+[DEBUG] Executable: C:/Program Files/PPSSPP/PPSSPPWindows64.exe
+[DEBUG] ISO: D:/Kurt/Tactics Ogre - Let Us Cling Together (USA).iso
+[DEBUG] Save State: C:\Users\mepla/OneDrive/Documents\PPSSPP/PSP/PPSSPP_STATE\ULUS10565_1.00_0.ppst
+[DEBUG] Loading save state: C:\Users\mepla/OneDrive/Documents\PPSSPP/PSP/PPSSPP_STATE\ULUS10565_1.00_0.ppst
+[ERROR] Failed to launch PPSSPP: name 'time' is not defined
+[CONTEXT] ISO: D:/Kurt/Tactics Ogre - Let Us Cling Together (USA).iso
+[CONTEXT] State: C:\Users\mepla/OneDrive/Documents\PPSSPP/PSP/PPSSPP_STATE\ULUS10565_1.00_0.ppst
+
+[DEBUG] === New Launch Request ===
+[DEBUG] Executable: C:/Program Files/PPSSPP/PPSSPPWindows64.exe
+[DEBUG] ISO: D:/Kurt/Tactics Ogre - Let Us Cling Together (USA).iso
+[DEBUG] Save State: C:\Users\mepla/OneDrive/Documents\PPSSPP/PSP/PPSSPP_STATE\ULUS10565_1.00_0.ppst
+[DEBUG] Loading save state: C:\Users\mepla/OneDrive/Documents\PPSSPP/PSP/PPSSPP_STATE\ULUS10565_1.00_0.ppst
+[ERROR] Failed to launch PPSSPP: name 'time' is not defined
+[CONTEXT] ISO: D:/Kurt/Tactics Ogre - Let Us Cling Together (USA).iso
+[CONTEXT] State: C:\Users\mepla/OneDrive/Documents\PPSSPP/PSP/PPSSPP_STATE\ULUS10565_1.00_0.ppst
+
+[DEBUG] === New Launch Request ===
+[DEBUG] Executable: C:/Program Files/PPSSPP/PPSSPPWindows64.exe
+[DEBUG] ISO: D:/Kurt/Tactics Ogre - Let Us Cling Together (USA).iso
+[DEBUG] Save State: C:\Users\mepla/OneDrive/Documents\PPSSPP/PSP/PPSSPP_STATE\ULUS10565_1.00_0.ppst
+[DEBUG] Loading save state: C:\Users\mepla/OneDrive/Documents\PPSSPP/PSP/PPSSPP_STATE\ULUS10565_1.00_0.ppst
+[DEBUG] Launching with args: ['C:/Program Files/PPSSPP/PPSSPPWindows64.exe', 'D:/Kurt/Tactics Ogre - Let Us Cling Together (USA).iso', '--state=C:\\Users\\mepla/OneDrive/Documents\\PPSSPP/PSP/PPSSPP_STATE\\ULUS10565_1.00_0.ppst']
+[DEBUG] Launched successfully.
+
+[DEBUG] === New Launch Request ===
+[DEBUG] Executable: C:/Program Files/PPSSPP/PPSSPPWindows64.exe
+[DEBUG] ISO: D:/Kurt/Tactics Ogre - Let Us Cling Together (USA).iso
+[DEBUG] Save State: C:\Users\mepla/OneDrive/Documents\PPSSPP/PSP/PPSSPP_STATE\ULUS10565_1.00_0.ppst
+[DEBUG] Loading save state: C:\Users\mepla/OneDrive/Documents\PPSSPP/PSP/PPSSPP_STATE\ULUS10565_1.00_0.ppst
+[DEBUG] Launching with args: ['C:/Program Files/PPSSPP/PPSSPPWindows64.exe', 'D:/Kurt/Tactics Ogre - Let Us Cling Together (USA).iso', '--state=C:\\Users\\mepla/OneDrive/Documents\\PPSSPP/PSP/PPSSPP_STATE\\ULUS10565_1.00_0.ppst']
+[DEBUG] Launched successfully.
+
+[DEBUG] === New Launch Request ===
+[DEBUG] Executable: C:/Program Files/PPSSPP/PPSSPPWindows64.exe
+[DEBUG] ISO: D:/Kurt/Tactics Ogre - Let Us Cling Together (USA).iso
+[DEBUG] Save State: C:\Users\mepla/OneDrive/Documents\PPSSPP/PSP/PPSSPP_STATE\ULUS10565_1.00_0.ppst
+[DEBUG] Loading save state: C:\Users\mepla/OneDrive/Documents\PPSSPP/PSP/PPSSPP_STATE\ULUS10565_1.00_0.ppst
+[DEBUG] Launching with args: ['C:/Program Files/PPSSPP/PPSSPPWindows64.exe', 'D:/Kurt/Tactics Ogre - Let Us Cling Together (USA).iso', '--state=C:\\Users\\mepla/OneDrive/Documents\\PPSSPP/PSP/PPSSPP_STATE\\ULUS10565_1.00_0.ppst']
 [DEBUG] Launched successfully.
 
 [DEBUG] === New Launch Request ===
