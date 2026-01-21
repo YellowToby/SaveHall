@@ -285,6 +285,12 @@ def health():
     """Health check endpoint"""
     return {'status': 'online', 'service': 'SaveHub Web Dashboard'}
 
+@app.route('/iso-scanner')
+def iso_scanner():
+    """ISO Scanner page"""
+    return render_template('iso_scanner.html')
+
+
 if __name__ == '__main__':
     print("\n" + "="*60)
     print("SaveHub Web Dashboard")

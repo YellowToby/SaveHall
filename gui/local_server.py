@@ -6,11 +6,13 @@ from threading import Thread
 import sys
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 from core.launcher import launch_ppsspp
 from core.game_map import get_iso_for_disc_id, load_game_map
 from core.psp_sfo_parser import parse_param_sfo
 from core.snes9x_parser import find_snes9x_saves, get_snes9x_save_states
 from core.config import get_ppsspp_path, get_savedata_dir, get_savestate_dir, get_snes9x_path, set_snes9x_path, get_snes9x_save_dir, set_snes9x_save_dir
+from core.iso_scanner import ISOScanner
 
 app = Flask(__name__)
 CORS(app)  # Allow cross-origin requests from web dashboard
@@ -322,6 +324,261 @@ def refresh_library():
         'success': True,
         'games_found': len(agent.games_cache)
     })
+
+@app.route('/api/iso-scanner/status', methods=['GET'])
+def iso_scanner_status():
+    """Get current ISO scan status"""
+    scanner = ISOScanner()
+    game_map = scanner.load_existing_game_map()
+    
+    return jsonify({
+        'total_mapped': len(game_map),
+        'game_map_path': str(scanner.game_map_path),
+        'common_locations': ISOScanner.COMMON_ISO_LOCATIONS,
+        'mapped_games': list(game_map.keys())
+    })
+
+@app.route('/api/iso-scanner/scan', methods=['POST'])
+def scan_isos():
+    """
+    Trigger ISO scan
+    
+    Request body:
+    {
+        "scan_common": true,
+        "custom_paths": ["/path/to/games", "/another/path"],
+        "recursive": true
+    }
+    """
+    data = request.json or {}
+    scan_common = data.get('scan_common', True)
+    custom_paths = data.get('custom_paths', [])
+    recursive = data.get('recursive', True)
+    
+    scanner = ISOScanner()
+    found = {}
+    
+    try:
+        # Scan common locations
+        if scan_common:
+            found.update(scanner.scan_all_common_locations())
+        
+        # Scan custom paths
+        for path in custom_paths:
+            if os.path.exists(path):
+                found.update(scanner.scan_directory(path, recursive=recursive))
+        
+        # Merge and save
+        merged = scanner.merge_with_existing(found)
+        scanner.save_game_map(merged)
+        
+        # Reload agent's game cache to show new ISOs
+        agent.scan_saves()
+        
+        return jsonify({
+            'success': True,
+            'found': len(found),
+            'total_mapped': len(merged),
+            'new_games': list(found.keys())
+        })
+    
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/api/iso-scanner/add-path', methods=['POST'])
+def add_custom_iso_path():
+    """
+    Add a single ISO file or directory to game map
+    
+    Request body:
+    {
+        "path": "/path/to/game.iso"
+    }
+    or
+    {
+        "disc_id": "ULUS10565",
+        "iso_path": "/path/to/game.iso"
+    }
+    """
+    data = request.json
+    
+    if not data:
+        return jsonify({'error': 'No data provided'}), 400
+    
+    scanner = ISOScanner()
+    
+    try:
+        if 'path' in data:
+            # Auto-detect disc ID from file
+            path = Path(data['path'])
+            
+            if path.is_file():
+                disc_id = scanner._extract_disc_id(path)
+                if not disc_id:
+                    return jsonify({'error': 'Could not extract disc ID from file'}), 400
+                
+                game_map = scanner.load_existing_game_map()
+                game_map[disc_id] = str(path.absolute())
+                scanner.save_game_map(game_map)
+                
+                return jsonify({
+                    'success': True,
+                    'disc_id': disc_id,
+                    'iso_path': str(path.absolute())
+                })
+            
+            elif path.is_dir():
+                # Scan directory
+                found = scanner.scan_directory(str(path))
+                merged = scanner.merge_with_existing(found)
+                scanner.save_game_map(merged)
+                
+                return jsonify({
+                    'success': True,
+                    'found': len(found),
+                    'games': list(found.keys())
+                })
+        
+        elif 'disc_id' in data and 'iso_path' in data:
+            # Manual mapping
+            disc_id = data['disc_id'].upper()
+            iso_path = data['iso_path']
+            
+            if not os.path.exists(iso_path):
+                return jsonify({'error': 'ISO path does not exist'}), 400
+            
+            game_map = scanner.load_existing_game_map()
+            game_map[disc_id] = iso_path
+            scanner.save_game_map(game_map)
+            
+            return jsonify({
+                'success': True,
+                'disc_id': disc_id,
+                'iso_path': iso_path
+            })
+        
+        else:
+            return jsonify({'error': 'Invalid request format'}), 400
+    
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/iso-scanner/remove', methods=['DELETE'])
+def remove_iso_mapping():
+    """
+    Remove a disc ID from game map
+    
+    Request body:
+    {
+        "disc_id": "ULUS10565"
+    }
+    """
+    data = request.json
+    disc_id = data.get('disc_id')
+    
+    if not disc_id:
+        return jsonify({'error': 'disc_id required'}), 400
+    
+    scanner = ISOScanner()
+    game_map = scanner.load_existing_game_map()
+    
+    if disc_id in game_map:
+        del game_map[disc_id]
+        scanner.save_game_map(game_map)
+        
+        return jsonify({
+            'success': True,
+            'removed': disc_id
+        })
+    else:
+        return jsonify({'error': 'Disc ID not found'}), 404
+
+@app.route('/api/iso-scanner/verify', methods=['POST'])
+def verify_iso_paths():
+    """
+    Verify all ISO paths in game_map.json still exist
+    Returns list of missing ISOs
+    """
+    scanner = ISOScanner()
+    game_map = scanner.load_existing_game_map()
+    
+    missing = []
+    valid = []
+    
+    for disc_id, iso_path in game_map.items():
+        if os.path.exists(iso_path):
+            valid.append(disc_id)
+        else:
+            missing.append({
+                'disc_id': disc_id,
+                'path': iso_path
+            })
+    
+    return jsonify({
+        'total': len(game_map),
+        'valid': len(valid),
+        'missing': len(missing),
+        'missing_games': missing
+    })
+
+
+@app.route('/api/iso-scanner/export', methods=['GET'])
+def export_game_map():
+    """Export game_map.json as downloadable file"""
+    scanner = ISOScanner()
+    game_map = scanner.load_existing_game_map()
+    
+    from flask import send_file
+    import io
+    
+    # Create in-memory file
+    json_str = json.dumps(game_map, indent=4)
+    buffer = io.BytesIO(json_str.encode('utf-8'))
+    buffer.seek(0)
+    
+    return send_file(
+        buffer,
+        mimetype='application/json',
+        as_attachment=True,
+        download_name='game_map.json'
+    )
+
+
+@app.route('/api/iso-scanner/import', methods=['POST'])
+def import_game_map():
+    """
+    Import game_map.json from upload
+    
+    Form data:
+    - file: game_map.json file
+    """
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file uploaded'}), 400
+    
+    file = request.files['file']
+    
+    try:
+        content = file.read().decode('utf-8')
+        imported_map = json.loads(content)
+        
+        scanner = ISOScanner()
+        existing_map = scanner.load_existing_game_map()
+        
+        # Merge imported with existing
+        existing_map.update(imported_map)
+        scanner.save_game_map(existing_map)
+        
+        return jsonify({
+            'success': True,
+            'imported': len(imported_map),
+            'total': len(existing_map)
+        })
+    
+    except Exception as e:
+        return jsonify({'error': f'Import failed: {str(e)}'}), 500
 
 def run_server(port=8765):
     """Start the Flask server in a separate thread"""

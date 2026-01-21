@@ -5,8 +5,16 @@ Extract recent games from PPSSPP's ppsspp.ini config file
 
 import os
 import re
+import struct
+import json
+import sys
 from pathlib import Path
 from typing import List, Dict, Optional
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+
+#import iso_scanner
 
 
 def find_ppsspp_config_paths() -> List[str]:
@@ -15,15 +23,18 @@ def find_ppsspp_config_paths() -> List[str]:
     
     PPSSPP stores config in:
     - Windows: Documents/PPSSPP/memstick/PSP/SYSTEM/ppsspp.ini
+    - Windows: Documents/PPSSPP/PSP/SYSTEM/ppsspp.ini
     - Windows (alt): AppData/Roaming/ppsspp.org/ppsspp.ini
     - Portable: Same directory as PPSSPP.exe
     """
     possible_paths = [
         # Standard Documents location
         os.path.expanduser("~/Documents/PPSSPP/memstick/PSP/SYSTEM/ppsspp.ini"),
+        os.path.expanduser("~/Documents/PPSSPP/PSP/SYSTEM/ppsspp.ini"),
         
         # OneDrive Documents
         os.path.expanduser("~/OneDrive/Documents/PPSSPP/memstick/PSP/SYSTEM/ppsspp.ini"),
+        os.path.expanduser("~/OneDrive/Documents/PPSSPP/PSP/SYSTEM/ppsspp.ini"),
         
         # AppData Roaming
         os.path.expanduser("~/AppData/Roaming/ppsspp.org/ppsspp.ini"),
@@ -42,63 +53,114 @@ def find_ppsspp_config_paths() -> List[str]:
     return found_paths
 
 
-def parse_ppsspp_ini(ini_path: str) -> Dict:
+from typing import Dict, List
+import os
+
+def parse_ppsspp_ini(ini_path: str) -> Dict[str, any]:
     """
-    Parse PPSSPP ppsspp.ini configuration file
+    Parse PPSSPP's ppsspp.ini file.
+    
+    Focuses on extracting:
+    - Recent game paths (FileName0=, FileName1=, ... under [Recent])
+    - CurrentDirectory (if present)
     
     Returns:
-        Dict with recent games and settings
+        {
+            'recent_isos': List[str],         # full paths from recent entries
+            'current_directory': str | None   # CurrentDirectory value or None
+        }
     """
     if not os.path.exists(ini_path):
         print(f"[ERROR] Config not found: {ini_path}")
-        return {}
-    
-    config = {
-        'recent_isos': [],
-        'current_directory': None,
-        'game_settings': {}
-    }
-    
-    current_section = None
-    
+        return {'recent_isos': [], 'current_directory': None}
+
+    recent_isos: List[str] = []
+    current_directory: str | None = None
+
+    in_recent_section = False
+
     try:
         with open(ini_path, 'r', encoding='utf-8', errors='ignore') as f:
             for line in f:
                 line = line.strip()
-                
-                # Skip empty lines and comments
-                if not line or line.startswith('#') or line.startswith(';'):
+
+                # Skip blank lines and comments
+                if not line or line.startswith(('#', ';')):
                     continue
-                
-                # Section headers [SectionName]
+
+                # Section start/end detection
                 if line.startswith('[') and line.endswith(']'):
-                    current_section = line[1:-1]
+                    section_name = line[1:-1].strip()
+                    in_recent_section = (section_name == 'Recent')
                     continue
-                
-                # Key = Value pairs
-                if '=' in line:
-                    key, value = line.split('=', 1)
-                    key = key.strip()
-                    value = value.strip()
-                    
-                    # Recent ISO entries
-                    if key.startswith('RecentIso'):
-                        if value:  # Not empty
-                            config['recent_isos'].append(value)
-                    
-                    # Current directory
-                    elif key == 'CurrentDirectory':
-                        config['current_directory'] = value
-                    
-                    # Other useful settings
-                    elif current_section == 'General':
-                        config['game_settings'][key] = value
-    
+
+                # Only process key=value lines inside [Recent] or for CurrentDirectory
+                if '=' not in line:
+                    continue
+
+                key, value = line.split('=', 1)
+                key = key.strip()
+                value = value.strip()
+
+                if in_recent_section:
+                    if key.startswith('FileName') and value:
+                        recent_isos.append(value)
+
+                # Optional: capture CurrentDirectory (can appear outside [Recent])
+                elif key == 'CurrentDirectory' and value:
+                    current_directory = value
+
     except Exception as e:
         print(f"[ERROR] Failed to parse {ini_path}: {e}")
-    
-    return config
+        return {'recent_isos': [], 'current_directory': None}
 
+    return {
+        'recent_isos': recent_isos,
+        'current_directory': current_directory,
+    }
+
+def extract_disc_id_from_iso(iso_path: Path) -> str | None:
+    """Very basic: tries to find DISC_ID from PARAM.SFO in ISO"""
+    try:
+        with open(iso_path, 'rb') as f:
+            # PSP ISOs start with data at sector 16 (offset 0x8000 sectors * 2048 bytes)
+            f.seek(16 * 2048)  # UMD_DATA.BIN area
+            data = f.read(1024 * 1024)  # read ~1MB, should be enough
+
+            # Look for PARAM.SFO signature "PSF" + version
+            pos = data.find(b'PSF\x00')
+            if pos == -1:
+                return None
+
+            f.seek(16 * 2048 + pos)
+            # Skip header (read real offsets)
+            header = f.read(20)
+            if len(header) < 20:
+                return None
+
+            key_table_start, = struct.unpack('<I', header[8:12])
+            data_table_start, = struct.unpack('<I', header[12:16])
+
+            # Now read keys (simplified - look for "DISC_ID" key)
+            f.seek(16 * 2048 + pos + key_table_start)
+            keys_data = f.read(4096)  # enough for keys
+
+            disc_id_pos = keys_data.find(b'DISC_ID\x00')
+            if disc_id_pos == -1:
+                return None
+
+            # Value offset is after keys, but this is approximate
+            # Better full parser exists, but for quick: search nearby for ULUSxxxx etc.
+            nearby = keys_data[max(0, disc_id_pos-200):disc_id_pos+200].decode('ascii', errors='ignore')
+            import re
+            match = re.search(r'(ULUS|ULES|NPJH|NPUH|NPUG|UCUS|UCES|NPPA|NPEZ|ULJM|ULJS)[-_]?[0-9]{5}', nearby, re.I)
+            if match:
+                raw = match.group(0).upper().replace('-', '')
+                return raw
+
+    except Exception:
+        pass
+    return None
 
 def extract_game_info_from_path(iso_path: str) -> Dict[str, str]:
     """
@@ -110,7 +172,8 @@ def extract_game_info_from_path(iso_path: str) -> Dict[str, str]:
     Returns:
         Dict with game_name, disc_id, directory
     """
-    path = Path(iso_path)
+    normalized = iso_path.replace('\\', '/').strip()
+    path = Path(normalized)
     
     info = {
         'full_path': iso_path,
@@ -131,6 +194,11 @@ def extract_game_info_from_path(iso_path: str) -> Dict[str, str]:
     
     return info
 
+    if file_path.suffix.lower() in ['.iso', '.cso']:
+        disc_id = extract_disc_id_from_iso(file_path)
+        if disc_id:
+            info['disc_id'] = disc_id
+            # no need for filename fallback!
 
 def get_recent_games() -> List[Dict]:
     """
@@ -154,8 +222,10 @@ def get_recent_games() -> List[Dict]:
     recent_games = []
     for iso_path in config['recent_isos']:
         if os.path.exists(iso_path):
+            exists = os.path.exists(iso_path)
             game_info = extract_game_info_from_path(iso_path)
             game_info['exists'] = True
+            game_info['exists'] = exists
             recent_games.append(game_info)
         else:
             # Track missing ISOs
@@ -166,23 +236,50 @@ def get_recent_games() -> List[Dict]:
     return recent_games
 
 
-def auto_populate_game_map_from_recent() -> Dict[str, str]:
-    """
-    Automatically create game_map.json entries from recent games
-    
-    Returns:
-        Dict suitable for game_map.json
-    """
+"""def auto_populate_game_map_from_recent() -> Dict[str, str]:
+
     recent_games = get_recent_games()
     
     game_map = {}
     
     for game in recent_games:
         if game.get('disc_id') and game.get('exists'):
-            game_map[game['disc_id']] = game['full_path']
+            normalized_path = game['full_path'].replace('\\', '/')
+            game_map[game['disc_id']] = normalized_path
     
     return game_map
+"""
 
+def auto_populate_game_map_from_recent() -> Dict[str, str]:
+    from iso_scanner import ISOScanner
+    from pathlib import Path
+         
+    recent_games = get_recent_games()  # your existing function
+    
+    scanner = ISOScanner()  # creates with default game_map.json path
+    
+    game_map = {}
+    
+    for game in recent_games:
+        if not game['exists']:
+            continue
+            
+        full_path_str = game['full_path']
+        full_path = Path(full_path_str)  # convert once
+        
+        # Reuse scanner's disc ID extraction (filename + parent + header if .iso)
+        disc_id = scanner.extract_disc_id(full_path)
+        
+        if disc_id:
+            #normalized_path = full_path.replace('\\', '/')
+            normalized_path = full_path.as_posix()
+            game_map[disc_id] = normalized_path
+            #game_map[disc_id] = game['full_path'] #normalized
+            print(f"  Mapped recent: {disc_id} → {normalized_path}")
+        else:
+            print(f"  Could not get disc ID for recent: {game['filename']}")
+    
+    return game_map
 
 def scan_directory_for_isos(directory: str) -> List[str]:
     """
@@ -262,6 +359,7 @@ def test_ppsspp_config():
         print("\n❌ No PPSSPP configuration found!")
         print("\nExpected locations:")
         print("  • ~/Documents/PPSSPP/memstick/PSP/SYSTEM/ppsspp.ini")
+        print("  • ~/Documents/PPSSPP/PSP/SYSTEM/ppsspp.ini")
         print("  • ~/AppData/Roaming/ppsspp.org/ppsspp.ini")
         return
     
@@ -302,7 +400,18 @@ if __name__ == '__main__':
     # Save to file
     if game_map:
         import json
-        output_path = 'game_map_from_ppsspp.json'
-        with open(output_path, 'w') as f:
-            json.dump(game_map, f, indent=4)
-        print(f"\n💾 Saved to: {output_path}")
+        
+        # Load existing game_map.json
+        existing_map = {}
+        if os.path.exists('game_map.json'):
+            with open('game_map.json', 'r') as f:
+                existing_map = json.load(f)
+        
+        # Merge (new entries won't overwrite existing ones)
+        merged_map = {**game_map, **existing_map}
+        
+        clean_map = {k: v.replace('\\', '/') for k, v in merged_map.items()}
+        with open('game_map.json', 'w') as f:
+            json.dump(merged_map, f, indent=4)
+        
+        print(f"\n💾 Merged {len(game_map)} new entries into game_map.json")
