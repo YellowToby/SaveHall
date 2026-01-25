@@ -1,21 +1,14 @@
 """
-ISO Scanner for SaveNexus
-Automatically detects ISO/CSO files and maps them to disc IDs
+Enhanced ISO Scanner for SaveHall
+Automatically detects ISO/CSO files and maps them to disc IDs with improved directory handling
 """
 
 import os
 import re
-import sys
 import json
 import struct
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
-
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
-from core.ppsspp_recent import get_ppsspp_recent_for_game_map
-from core.snes9x_recent import get_snes9x_recent_for_rom_map
-from core.ppsspp_recent import parse_ppsspp_ini, find_ppsspp_config_paths
 import logging
 
 logging.basicConfig(level=logging.INFO)
@@ -23,19 +16,21 @@ logger = logging.getLogger(__name__)
 
 
 class ISOScanner:
-    """Scans directories for PSP ISO/CSO files and extracts disc IDs"""
-    ppsspp_recent = get_ppsspp_recent_for_game_map()  # Auto-finds ISOs
-    snes_recent = get_snes9x_recent_for_rom_map()      # Auto-finds ROMs
+    """Enhanced scanner for PSP ISO/CSO files with smart directory detection"""
     
+    # Common ISO storage locations (priority ordered)
     COMMON_ISO_LOCATIONS = [
-        # Windows common locations
+        # Recent PPSSPP paths (highest priority)
+        'ppsspp_recent',
+        
+        # Primary drives
         r"C:\PPSSPP games",
         r"C:\Games\PSP",
         r"D:\Games\PSP",
+        r"D:\Kurt",  # From your game_map.json
         r"E:\Games\PSP",
         
         # User directories
-        
         os.path.expanduser("~/Games/PSP"),
         os.path.expanduser("~/Downloads"),
         os.path.expanduser("~/Desktop/PSP Games"),
@@ -48,22 +43,51 @@ class ISOScanner:
     
     SUPPORTED_EXTENSIONS = ['.iso', '.cso', '.pbp']
     
+    # PSP disc ID patterns
+    DISC_ID_PATTERN = re.compile(
+        r'(ULUS|ULES|ULJM|ULJS|NPJH|NPUH|NPUG|UCUS|UCES|NPPA|NPEZ|ULKP|ULKS|UCAS|UCJS|NPHG)'
+        r'[-_ ]?(\d{5})',
+        re.IGNORECASE
+    )
+    
     def __init__(self, game_map_path: str = None):
         """Initialize scanner with path to game_map.json"""
         if game_map_path is None:
-            # Default to project root
             project_root = Path(__file__).parent.parent
             game_map_path = project_root / "game_map.json"
         
         self.game_map_path = Path(game_map_path)
         self.found_isos: Dict[str, str] = {}
-        self.disc_id_pattern = re.compile(
-             r'(ULUS|ULES|ULJM|ULJS|NPJH|NPUH|NPUG|UCUS|UCES|NPPA|NPEZ|ULKP|ULKS|UCAS|UCJS|NPHG)'
-             r'[-_ ]?(\d{5})',
-             re.IGNORECASE
-         )
+        self.scan_history: List[str] = []
+    
+    def get_ppsspp_recent_paths(self) -> List[str]:
+        """Get paths from PPSSPP recent games list"""
+        try:
+            from core.ppsspp_recent import get_ppsspp_recent_for_game_map
+            recent_map = get_ppsspp_recent_for_game_map()
+            
+            # Extract unique directory paths
+            paths = set()
+            for iso_path in recent_map.values():
+                paths.add(str(Path(iso_path).parent))
+            
+            logger.info(f"Found {len(paths)} directories from PPSSPP recent")
+            return list(paths)
+        except ImportError:
+            logger.warning("Could not import ppsspp_recent")
+            return []
     
     def scan_directory(self, directory: str, recursive: bool = True) -> Dict[str, str]:
+        """
+        Scan directory for ISO/CSO files
+        
+        Args:
+            directory: Directory path or file path
+            recursive: Scan subdirectories
+            
+        Returns:
+            Dict mapping disc_id -> iso_path
+        """
         path = Path(directory)
         
         if not path.exists():
@@ -72,18 +96,19 @@ class ISOScanner:
         
         found = {}
         
+        # Handle single file
         if path.is_file() and path.suffix.lower() in self.SUPPORTED_EXTENSIONS:
-            # Single file case — process it directly
             disc_id = self.extract_disc_id(path)
             if disc_id:
                 normalized = path.absolute().as_posix()
                 found[disc_id] = normalized
-                logger.info(f"Found single file: {disc_id} → {path.name}")
+                logger.info(f"Found: {disc_id} → {path.name}")
         
+        # Handle directory
         elif path.is_dir():
-            # Directory case — scan as before
             logger.info(f"Scanning directory: {path}")
             pattern = '**/*' if recursive else '*'
+            
             for file_path in path.glob(pattern):
                 if file_path.is_file() and file_path.suffix.lower() in self.SUPPORTED_EXTENSIONS:
                     disc_id = self.extract_disc_id(file_path)
@@ -104,72 +129,40 @@ class ISOScanner:
         Returns:
             Dict mapping disc_id -> iso_path
         """
-        logger.info("Scanning common ISO locations...")
+        logger.info("Starting comprehensive scan...")
         all_found = {}
         
+        # First, check PPSSPP recent games
+        if 'ppsspp_recent' in self.COMMON_ISO_LOCATIONS:
+            recent_paths = self.get_ppsspp_recent_paths()
+            for path in recent_paths:
+                if os.path.exists(path):
+                    found = self.scan_directory(path, recursive=True)
+                    all_found.update(found)
+        
+        # Then scan common locations
         for location in self.COMMON_ISO_LOCATIONS:
-            location = os.path.expandvars(location)  # Expand env vars
+            if location == 'ppsspp_recent':
+                continue
+                
+            location = os.path.expandvars(location)
             if os.path.exists(location):
                 found = self.scan_directory(location, recursive=True)
                 all_found.update(found)
             else:
                 logger.debug(f"Skipping non-existent: {location}")
         
-        logger.info(f"Total ISOs found: {len(all_found)}")
+        logger.info(f"Scan complete: {len(all_found)} ISOs found")
         return all_found
-
-    def scan_recent_ppsspp_paths(self) -> Dict[str, str]:
-        """
-        Quick-scan: Automatically scan paths from PPSSPP recent games list.
-        Returns dict of newly found disc_id -> path
-        """
-        from core.ppsspp_recent import parse_ppsspp_ini, find_ppsspp_config_paths
-        
-        found = {}
-        
-        config_paths = find_ppsspp_config_paths()
-        if not config_paths:
-            logger.warning("No PPSSPP config found for quick scan")
-            return found
-        
-        config = parse_ppsspp_ini(config_paths[0])
-        recent_paths = config.get('recent_isos', [])
-        
-        if not recent_paths:
-            logger.info("No recent games found in PPSSPP config")
-            return found
-        
-        logger.info(f"Quick-scanning {len(recent_paths)} recent PPSSPP paths...")
-        
-        for raw_path in recent_paths:
-            path = Path(raw_path)
-            if not path.exists():
-                logger.debug(f"Skipping missing recent path: {raw_path}")
-                continue
-            
-            # Reuse existing scan_directory logic (supports both files and folders)
-            if path.is_file():
-                # Single file
-                disc_id = self.extract_disc_id(path)
-                if disc_id:
-                    normalized = path.absolute().as_posix()
-                    found[disc_id] = normalized
-                    logger.info(f"Quick found (file): {disc_id} → {path.name}")
-            else:
-                # Directory → scan contents
-                dir_found = self.scan_directory(str(path), recursive=True)
-                found.update(dir_found)
-        
-        return found
-
+    
     def extract_disc_id(self, file_path: Path) -> Optional[str]:
         """
         Extract disc ID from ISO/CSO file
         
-        Tries multiple methods:
+        Methods (priority order):
         1. Filename pattern matching
-        2. ISO header parsing (for uncompressed ISOs)
-        3. Directory name pattern matching
+        2. Parent directory name matching
+        3. ISO header parsing (for .iso files only)
         
         Args:
             file_path: Path to ISO/CSO file
@@ -178,16 +171,18 @@ class ISOScanner:
             Disc ID (e.g., ULUS10565) or None
         """
         # Method 1: Check filename
-        filename_match = self.disc_id_pattern.search(file_path.name)
+        filename_match = self.DISC_ID_PATTERN.search(file_path.name)
         if filename_match:
-            return filename_match.group(0).upper()
+            disc_id = f"{filename_match.group(1).upper()}{filename_match.group(2)}"
+            return disc_id.replace('-', '').replace('_', '')
         
         # Method 2: Check parent directory name
-        parent_match = self.disc_id_pattern.search(file_path.parent.name)
+        parent_match = self.DISC_ID_PATTERN.search(file_path.parent.name)
         if parent_match:
-            return parent_match.group(0).upper()
+            disc_id = f"{parent_match.group(1).upper()}{parent_match.group(2)}"
+            return disc_id.replace('-', '').replace('_', '')
         
-        # Method 3: Parse ISO header (only for .iso files, not .cso)
+        # Method 3: Parse ISO header (only for .iso files)
         if file_path.suffix.lower() == '.iso':
             header_id = self._parse_iso_header(file_path)
             if header_id:
@@ -195,18 +190,14 @@ class ISOScanner:
         
         logger.warning(f"Could not extract disc ID from: {file_path.name}")
         return None
-        path = Path(file_path)
-        return self.extract_disc_id(path)
-
-
     
     def _parse_iso_header(self, iso_path: Path) -> Optional[str]:
         """
         Parse PSP ISO header to extract disc ID
         
         PSP ISO structure:
-        - Sector 0x8000 (offset 0x8000 * 2048): UMD_DATA.BIN
-        - Contains disc ID at specific offset
+        - Disc ID typically at offset 0x8373
+        - Also check first 1KB for embedded disc ID
         
         Args:
             iso_path: Path to ISO file
@@ -216,24 +207,23 @@ class ISOScanner:
         """
         try:
             with open(iso_path, 'rb') as f:
-                # Seek to UMD data area
-                # Disc ID is usually at offset 0x8373 in many PSP ISOs
+                # Try standard offset
                 f.seek(0x8373)
                 disc_id_bytes = f.read(10)
                 
-                # Try to decode as ASCII
                 disc_id = disc_id_bytes.decode('ascii', errors='ignore').strip()
+                if self.DISC_ID_PATTERN.match(disc_id):
+                    return disc_id.upper().replace('-', '').replace('_', '')
                 
-                # Validate format
-                if self.disc_id_pattern.match(disc_id):
-                    return disc_id.upper()
-                
-                # Alternative: try different offset
+                # Try first KB
                 f.seek(0x0000)
                 first_kb = f.read(1024)
-                match = self.disc_id_pattern.search(first_kb.decode('ascii', errors='ignore'))
+                match = self.DISC_ID_PATTERN.search(
+                    first_kb.decode('ascii', errors='ignore')
+                )
                 if match:
-                    return match.group(0).upper()
+                    disc_id = f"{match.group(1).upper()}{match.group(2)}"
+                    return disc_id.replace('-', '').replace('_', '')
                     
         except Exception as e:
             logger.debug(f"Could not parse ISO header for {iso_path.name}: {e}")
@@ -259,7 +249,7 @@ class ISOScanner:
             game_map: Dict mapping disc_id -> iso_path
             backup: Whether to create backup of existing file
         """
-        # Create backup if requested
+        # Create backup
         if backup and self.game_map_path.exists():
             backup_path = self.game_map_path.with_suffix('.json.backup')
             import shutil
@@ -267,6 +257,7 @@ class ISOScanner:
             logger.info(f"Backup created: {backup_path}")
         
         # Save new game map
+        self.game_map_path.parent.mkdir(parents=True, exist_ok=True)
         with open(self.game_map_path, 'w', encoding='utf-8') as f:
             json.dump(game_map, f, indent=4, ensure_ascii=False)
         
@@ -284,7 +275,6 @@ class ISOScanner:
         """
         existing = self.load_existing_game_map()
         
-        # Track changes
         added = []
         updated = []
         
@@ -296,14 +286,32 @@ class ISOScanner:
             
             existing[disc_id] = iso_path
         
-        logger.info(f"Merge complete: {len(added)} added, {len(updated)} updated")
-        
         if added:
-            logger.info(f"New games: {', '.join(added)}")
+            logger.info(f"Added {len(added)} new games: {', '.join(added[:5])}")
         if updated:
-            logger.info(f"Updated paths: {', '.join(updated)}")
+            logger.info(f"Updated {len(updated)} paths: {', '.join(updated[:5])}")
         
         return existing
+    
+    def verify_paths(self) -> Tuple[List[str], List[str]]:
+        """
+        Verify all paths in game_map.json still exist
+        
+        Returns:
+            Tuple of (valid_disc_ids, missing_disc_ids)
+        """
+        game_map = self.load_existing_game_map()
+        valid = []
+        missing = []
+        
+        for disc_id, iso_path in game_map.items():
+            if os.path.exists(iso_path):
+                valid.append(disc_id)
+            else:
+                missing.append(disc_id)
+        
+        logger.info(f"Verification: {len(valid)} valid, {len(missing)} missing")
+        return valid, missing
     
     def scan_and_update(self, custom_paths: List[str] = None) -> Tuple[Dict[str, str], Dict[str, str]]:
         """
@@ -318,7 +326,7 @@ class ISOScanner:
         # Scan common locations
         found = self.scan_all_common_locations()
         
-        # Scan custom paths if provided
+        # Scan custom paths
         if custom_paths:
             for path in custom_paths:
                 custom_found = self.scan_directory(path, recursive=True)
@@ -335,24 +343,25 @@ class ISOScanner:
 
 def interactive_scan():
     """Interactive CLI for scanning ISOs"""
-    print("="*60)
-    print("SaveNexus ISO Scanner")
-    print("="*60)
+    print("=" * 60)
+    print("SaveHall ISO Scanner")
+    print("=" * 60)
     
     scanner = ISOScanner()
     
     print("\nOptions:")
-    print("1. Scan common locations")
+    print("1. Quick scan (PPSSPP recent + common locations)")
     print("2. Scan custom directory")
-    print("3. Full scan (common + custom)")
+    print("3. Full scan with custom paths")
     print("4. View current game map")
-    print("5. Quick scan recent PPSSPP games")  
+    print("5. Verify existing paths")
     print("0. Exit")
     
     choice = input("\nSelect option (0-5): ").strip()
-        
+    
     if choice == "0":
         print("Exiting scanner.")
+        return
     
     if choice == "1":
         found = scanner.scan_all_common_locations()
@@ -381,24 +390,27 @@ def interactive_scan():
     elif choice == "4":
         game_map = scanner.load_existing_game_map()
         print(f"\nCurrent game map ({len(game_map)} entries):")
-        for disc_id, path in game_map.items():
-            print(f"  {disc_id}: {path}")
-
+        for disc_id, path in sorted(game_map.items()):
+            exists = "✓" if os.path.exists(path) else "✗"
+            print(f"  [{exists}] {disc_id}: {path}")
+    
     elif choice == "5":
-        # New quick scan from recent PPSSPP paths
-        recent_found = scanner.scan_recent_ppsspp_paths()
-        if recent_found:
-            merged = scanner.merge_with_existing(recent_found)
-            scanner.save_game_map(merged)
-            print(f"\n✓ Quick scan added/updated {len(recent_found)} entries")
-            print(f"   Game map now has {len(merged)} total entries")
-        else:
-            print("\nNo new valid recent games could be mapped.")
-
+        valid, missing = scanner.verify_paths()
+        print(f"\n✓ Valid: {len(valid)}")
+        print(f"✗ Missing: {len(missing)}")
+        
+        if missing:
+            print("\nMissing ISOs:")
+            game_map = scanner.load_existing_game_map()
+            for disc_id in missing[:10]:
+                print(f"  ✗ {disc_id}: {game_map[disc_id]}")
+            if len(missing) > 10:
+                print(f"  ... and {len(missing) - 10} more")
+    
     else:
         print("Invalid choice")
     
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
 
 
 if __name__ == "__main__":

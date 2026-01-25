@@ -27,6 +27,7 @@ class LocalAgent:
             # PSP paths
             self.savedata_dir = get_savedata_dir()
             self.savestate_dir = get_savestate_dir()
+            
             print(f"[LOCAL SERVER] SAVEDATA: {self.savedata_dir}")
             print(f"[LOCAL SERVER] SAVESTATE: {self.savestate_dir}")
             
@@ -36,14 +37,12 @@ class LocalAgent:
 
             # Initialize caches for each emulator
             self.psp_games = [] #Will replace games_cache
-            self.games_cache = []
-            self.scan_saves()
             self.snes_games = []
             self.dolphin_games = []  # Placeholder
             self.citra_games = []    # Placeholder
-
+            self.games_cache = [] #Embodies all games to display correctly
             # Scan all emulators
-            #self.scan_all_emulators()
+            self.scan_all_emulators()
 
             
             print("[SUCCESS] LocalAgent initialized successfully")
@@ -66,54 +65,106 @@ class LocalAgent:
         print("[SCAN] Scanning all emulators...")
         self.psp_games = self.scan_psp_saves()
         self.snes_games = self.scan_snes_saves()
+        self.all_games = self.get_all_games()   
         # Add more as implemented
-        print(f"[SCAN] Total: {len(self.psp_games)} PSP, {len(self.snes_games)} SNES")
+        print(f"[SCAN] Total: {len(self.psp_games)} PSP, {len(self.snes_games)} SNES, overall: {len(self.all_games)}")
 
-    def scan_saves(self):
-        """Scan PSP save directories and build game library"""
+    def get_all_games(self):
+        """Get combined list from all emulators"""
+        return self.psp_games + self.snes_games + self.dolphin_games + self.citra_games
+
+    def get_games_by_emulator(self, emulator_id):
+        """Get games for specific emulator"""
+        emulator_map = {
+            'ppsspp': self.psp_games,
+            'snes9x': self.snes_games,
+            'dolphin': self.dolphin_games,
+            'citra': self.citra_games
+        }
+        return emulator_map.get(emulator_id, [])
+
+    def scan_psp_saves(self):
+        """Scan PSP saves - MODIFIED to tag emulator"""
         games = []
-    
+        
         if not os.path.exists(self.savedata_dir):
             print(f"[WARNING] SAVEDATA directory not found: {self.savedata_dir}")
             return games
-    
-        print(f"[SCAN] Scanning: {self.savedata_dir}")
-    
-        import time
-    
-        # TIME THE LISTING
-        print("[SCAN] Listing directory contents...")
-        start = time.time()
+        
+        print(f"[SCAN PSP] Scanning: {self.savedata_dir}")
+        
         try:
             folders = os.listdir(self.savedata_dir)
-            elapsed = time.time() - start
-            print(f"[SCAN] Directory listing took {elapsed:.2f} seconds")
-            print(f"[SCAN] Found {len(folders)} items")
+            print(f"[SCAN PSP] Found {len(folders)} folders")
         except Exception as e:
             print(f"[ERROR] Failed to list directory: {e}")
             return games
-    
-        # NOW LOOP THROUGH THEM
-        for i, folder in enumerate(folders):
-            print(f"[SCAN] Processing {i+1}/{len(folders)}: {folder}")
         
+        for folder in folders:
             folder_path = os.path.join(self.savedata_dir, folder)
             if not os.path.isdir(folder_path):
                 continue
-    
+            
             param_path = os.path.join(folder_path, "PARAM.SFO")
             icon_path = os.path.join(folder_path, "ICON0.PNG")
-
+            
             if os.path.exists(param_path):
                 print(f"[SCAN] Parsing PARAM.SFO for {folder}...")
                 game_info = self._parse_game_info(param_path, folder, icon_path)
                 if game_info:
+                    # TAG AS PPSSPP - CRITICAL
+                    game_info['emulator'] = 'ppsspp'
+                    game_info['platform'] = 'PlayStation Portable'
+                    
                     game_info['save_states'] = self._get_save_states(game_info['disc_id'])
                     games.append(game_info)
         
-        print(f"[SCAN] Completed: {len(games)} games found")
-        self.games_cache = games
+        print(f"[SCAN PSP] Completed: {len(games)} games found")
         return games
+
+    def scan_snes_saves(self):
+        """Scan SNES9x saves - ADD THIS METHOD"""
+        games = []
+        
+        if not hasattr(self, 'snes9x_save_dir'):
+            return games
+        
+        if not os.path.exists(self.snes9x_save_dir):
+            print(f"[WARNING] SNES9x save directory not found: {self.snes9x_save_dir}")
+            return games
+        
+        print(f"[SCAN SNES] Scanning: {self.snes9x_save_dir}")
+        
+        try:
+            files = os.listdir(self.snes9x_save_dir)
+            print(f"[SCAN SNES] Found {len(files)} files")
+        except Exception as e:
+            print(f"[ERROR] Failed to list SNES directory: {e}")
+            return games
+        
+        for file in files:
+            if file.endswith('.srm') or file.endswith('.sav'):
+                file_path = os.path.join(self.snes9x_save_dir, file)
+                game_name = os.path.splitext(file)[0]
+                
+                # TAG AS SNES9X - CRITICAL
+                game_info = {
+                    'id': game_name,  # Use 'id' instead of 'disc_id' for SNES
+                    'title': game_name,
+                    'emulator': 'snes9x',
+                    'platform': 'Super Nintendo',
+                    'save_path': file_path,
+                    'icon_path': None,
+                    'has_rom': False,  # Check if ROM exists
+                    'save_states': []
+                }
+                
+                games.append(game_info)
+        
+        print(f"[SCAN SNES] Completed: {len(games)} games found")
+        return games
+
+
     
     def _parse_game_info(self, param_path, folder_name, icon_path):
         """Extract game metadata from PARAM.SFO"""
@@ -183,7 +234,7 @@ class LocalAgent:
         
             return {
                 'disc_id': disc_id,
-                'title': entries.get('TITLE', 'Unknown Game'),
+                'title': entries.get('TITLE', 'PPSSPP Game'),
                 'save_title': entries.get('SAVEDATA_TITLE', ''),
                 'icon_path': icon_path if icon_exists else None,
                 'save_path': os.path.dirname(param_path),
@@ -221,27 +272,51 @@ agent = LocalAgent()
 @app.route('/api/status', methods=['GET'])
 def get_status():
     """Check if local agent is running"""
+    all_games = agent.get_all_games()
+    
     return jsonify({
         'status': 'online',
         'ppsspp_configured': bool(get_ppsspp_path()),
-        'saves_found': len(agent.games_cache)
+        'total_games': len(all_games),
+        'games_by_emulator': {
+            'ppsspp': len(agent.psp_games),
+            'snes9x': len(agent.snes_games),
+            'dolphin': len(agent.dolphin_games),
+            'citra': len(agent.citra_games)
+        }
     })
 
 @app.route('/api/games', methods=['GET'])
 def get_games():
-    """Get all available games with saves"""
-    #agent.scan_saves()  # Refresh cache
-    if not agent.games_cache:
-        agent.scan_saves()
+    """Get games from all emulators or filter by specific emulator"""
+    emulator = request.args.get('emulator', 'all')
+    
+    # Rescan if no games found
+    if not agent.psp_games and not agent.snes_games:
+        agent.scan_all_emulators()
+    
+    # Filter by emulator
+    if emulator == 'all':
+        games = agent.get_all_games()
+    else:
+        games = agent.get_games_by_emulator(emulator)
+    
     return jsonify({
-        'games': agent.games_cache,
-        'total': len(agent.games_cache)
+        'games': games,
+        'total': len(games),
+        'by_emulator': {
+            'ppsspp': len(agent.psp_games),
+            'snes9x': len(agent.snes_games),
+            'dolphin': len(agent.dolphin_games),
+            'citra': len(agent.citra_games)
+        }
     })
+
 
 @app.route('/api/game/<disc_id>', methods=['GET'])
 def get_game_details(disc_id):
     """Get detailed info about a specific game"""
-    game = next((g for g in agent.games_cache if g['disc_id'] == disc_id), None)
+    game = next((g for g in agent.all_games if g['disc_id'] == disc_id), None)
     if not game:
         return jsonify({'error': 'Game not found'}), 404
     return jsonify(game)
@@ -308,21 +383,57 @@ def manage_game_map():
 
 @app.route('/api/icon/<disc_id>', methods=['GET'])
 def get_icon(disc_id):
-    """Serve game icon image"""
-    game = next((g for g in agent.games_cache if g['disc_id'] == disc_id), None)
-    if not game or not game.get('icon_path'):
-        return '', 404
+    print(f"[ICON REQ] disc_id = {disc_id}")
     
-    from flask import send_file
-    return send_file(game['icon_path'], mimetype='image/png')
+    try:
+        # Try main list first
+        game = None
+        if hasattr(agent, 'all_games'):
+            game = next((g for g in agent.all_games if g.get('disc_id') == disc_id), None)
+            print(f"[ICON] Checked all_games → found: {game is not None}")
+        
+        # Fallback to psp_games (safer right now)
+        if not game:
+            game = next((g for g in agent.psp_games if g.get('disc_id') == disc_id), None)
+            print(f"[ICON] Fallback to psp_games → found: {game is not None}")
+        
+        if not game:
+            print(f"[ICON 404] Game not found for {disc_id}")
+            return jsonify({'error': 'Game not found'}), 404
+        
+        icon_path = game.get('icon_path')
+        print(f"[ICON] icon_path from game = {icon_path}")
+        
+        if not icon_path:
+            print("[ICON] No icon_path in game data")
+            return '', 404
+        
+        if not os.path.exists(icon_path):
+            print(f"[ICON] File does NOT exist: {icon_path}")
+            return jsonify({'error': 'Icon file missing'}), 404
+        
+        print(f"[ICON] About to serve: {icon_path}")
+        print(f"[ICON] File size: {os.path.getsize(icon_path)} bytes")
+        
+        from flask import send_file
+        return send_file(icon_path, mimetype='image/png')
+    
+    except Exception as e:
+        import traceback
+        print("[ICON CRASH]")
+        traceback.print_exc()
+        return jsonify({
+            'error': 'Internal server error',
+            'details': str(e)
+        }), 500
 
 @app.route('/api/refresh', methods=['POST'])
 def refresh_library():
     """Manually refresh game library"""
-    agent.scan_saves()
+    agent.scan_all_emulators()
     return jsonify({
         'success': True,
-        'games_found': len(agent.games_cache)
+        'games_found': len(agent.all_games)
     })
 
 @app.route('/api/iso-scanner/status', methods=['GET'])
@@ -373,7 +484,7 @@ def scan_isos():
         scanner.save_game_map(merged)
         
         # Reload agent's game cache to show new ISOs
-        agent.scan_saves()
+        agent.scan_all_emulators()
         
         return jsonify({
             'success': True,
